@@ -1,0 +1,5 @@
+{
+    "editor.formatOnSave": true,
+    "typescript.autoClosingTags": true,
+    "typescript.suggest.paths": false 
+}
