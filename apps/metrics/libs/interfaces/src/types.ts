@@ -754,6 +754,12 @@ export type FacultiesInfo = {
   shortname?: string;
   facultyCode?: string;
   enabled?: boolean;
+  citationsPerCapita?: number;
+  hindexPerCapita?: number;
+  i10hindexPerCapita?: number;
+  total?: number;
+  rank?: number;
+  position?: string;
 };
 
 export type DepartmentsInfo = {
@@ -767,6 +773,12 @@ export type DepartmentsInfo = {
   departmentCode?: string;
   accredited?: boolean;
   enabled?: boolean;
+  citationsPerCapita?: number;
+  hindexPerCapita?: number;
+  i10hindexPerCapita?: number;
+  total?: number;
+  rank?: number;
+  position?: string;
 };
 
 export type StudentInfo = {

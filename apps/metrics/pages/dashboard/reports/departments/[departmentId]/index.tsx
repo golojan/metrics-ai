@@ -1,26 +1,26 @@
 import { NextPage } from 'next';
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '../../../../components/AdminLayout';
+import AdminLayout from '../../../../../components/AdminLayout';
 import { compose } from 'redux';
 
 import { faHome, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import Link from 'next/link';
-import AppHeader from '../../../../serverlets/AppHeader';
-import { authSchoolId, authToken, withAuth } from '../../../../libs/hocs';
-import AppDrawer from '../../../../serverlets/AppDrawer';
+import AppHeader from '../../../../../serverlets/AppHeader';
+import { authSchoolId, authToken, withAuth } from '../../../../../libs/hocs';
+import AppDrawer from '../../../../../serverlets/AppDrawer';
 import {
   getPositionString,
   loadDepartments,
   noAction,
-} from '../../../../libs/utils';
-import ReportsMenu from '../../../../components/ReportsMenu';
-import AppDashBoardTopMenuScores from '../../../../serverlets/AppDashBoardTopMenuScores';
-import AppDashboardTopMenu from '../../../../serverlets/AppDashboardTopMenu';
+} from '../../../../../libs/utils';
+import ReportsMenu from '../../../../../components/ReportsMenu';
+import AppDashBoardTopMenuScores from '../../../../../serverlets/AppDashBoardTopMenuScores';
+import AppDashboardTopMenu from '../../../../../serverlets/AppDashboardTopMenu';
 import { useAtom } from 'jotai';
-import { lecturersRankingAtom } from '../../../../libs/store';
-import { DepartmentsInfo, GSIRanking } from '../../../../libs/interfaces';
+import { lecturersRankingAtom } from '../../../../../libs/store';
+import { DepartmentsInfo, GSIRanking } from '../../../../../libs/interfaces';
 import AuthDepartments from 'apps/metrics/components/DataTables/AuthDepartments';
 
 const ReportDepartments: NextPage = () => {

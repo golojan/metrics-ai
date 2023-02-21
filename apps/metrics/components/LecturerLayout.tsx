@@ -52,11 +52,19 @@ const LecturerLayout = ({ children }: MyProps) => {
       };
       const getLecturersRanking = async () => {
         const result = await loadLecturersRanking(schoolid);
-        setLecturersRanking(result);
+        if (result) {
+          setLecturersRanking(result);
+        } else {
+          setLecturersRanking([]);
+        }
       };
       const getStudentsRanking = async () => {
         const result = await loadLecturersRanking(schoolid);
-        setStudentsRanking(result);
+        if (result) {
+          setStudentsRanking(result);
+        } else {
+          setStudentsRanking([]);
+        }
       };
       getSchoolInfo();
       getProfile();

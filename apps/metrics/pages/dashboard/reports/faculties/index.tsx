@@ -21,12 +21,68 @@ const ReportFaculties: NextPage = () => {
   const [busy, setBusy] = useState(false);
   const [lecturersRanking] = useAtom(lecturersRankingAtom);
   const schoolId = authSchoolId();
-  
-  const [lecturersBySchool, setLecturersBySchool] = useState<GSIRanking[]>(
-    [] as GSIRanking[]
-  );
 
   const [faculties, setFaculties] = useState<FacultiesInfo[]>([]);
+
+  // get the total citations per capita for a faculty
+  const getFacultyTotalCitiationsPerCapita = (facultyId: string) => {
+    const _lecturers = lecturersRanking.filter(
+      (lecturer) => lecturer.facultyId === facultyId
+    );
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.citationsPerCapita;
+    });
+    return Number(_total);
+  };
+
+  // get the total hindex per capita for a faculty
+  const getFacultyTotalHindexPerCapita = (facultyId: string) => {
+    const _lecturers = lecturersRanking.filter(
+      (lecturer) => lecturer.facultyId === facultyId
+    );
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.hindexPerCapita;
+    });
+    return Number(_total);
+  };
+
+  // get the total i10index per capita for a faculty
+  const getFacultyTotalI10indexPerCapita = (facultyId: string) => {
+    const _lecturers = lecturersRanking.filter(
+      (lecturer) => lecturer.facultyId === facultyId
+    );
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.i10hindexPerCapita;
+    });
+    return Number(_total);
+  };
+
+  // get the total for a faculty
+  const getFacultyTotal = (facultyId: string) => {
+    const _lecturers = lecturersRanking.filter(
+      (lecturer) => lecturer.facultyId === facultyId
+    );
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.total;
+    });
+    return Number(_total);
+  };
+
+  // get the total ranks for a faculty
+  const getFacultyTotalRanks = (facultyId: string) => {
+    const _lecturers = lecturersRanking.filter(
+      (lecturer) => lecturer.facultyId === facultyId
+    );
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.rank;
+    });
+    return Number(_total);
+  };
 
   useEffect(() => {
     const loadAllFaculties = async () => {
@@ -36,18 +92,29 @@ const ReportFaculties: NextPage = () => {
       setBusy(false);
     };
     loadAllFaculties();
-    if (lecturersRanking) {
+    if (faculties && lecturersRanking) {
+      setBusy(true);
       // // sort the filtered array by total in descending order
-      lecturersRanking.sort((a, b) => b.rank - a.rank);
-      // // add a rank property to each user object based on their position in the sorted array
-      lecturersRanking.forEach((user, index) => {
+      faculties.sort((a, b) => {
+        return b.total - a.total;
+      });
+      faculties.forEach((faculty, index) => {
+        faculty.citationsPerCapita = getFacultyTotalCitiationsPerCapita(
+          faculty._id
+        );
+        faculty.hindexPerCapita = getFacultyTotalHindexPerCapita(faculty._id);
+        faculty.i10hindexPerCapita = getFacultyTotalI10indexPerCapita(
+          faculty._id
+        );
+        faculty.total = getFacultyTotal(faculty._id);
+        faculty.rank = getFacultyTotalRanks(faculty._id);
         const _index = index + 1;
         const _position = getPositionString(_index);
-        user.position = _position;
+        faculty.position = _position;
       });
-      setLecturersBySchool(lecturersRanking);
+      setBusy(false);
     }
-  }, [lecturersRanking, schoolId]);
+  }, [faculties, lecturersRanking]);
 
   return (
     <>
@@ -70,7 +137,7 @@ const ReportFaculties: NextPage = () => {
                 <AuthFaculties
                   title="Ranking of School by Faculties"
                   data={faculties}
-                  loading={false}
+                  loading={busy}
                 />
               </div>
             </div>

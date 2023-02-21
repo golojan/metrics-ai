@@ -17,7 +17,9 @@ import {
   Search,
   ViewColumn,
 } from '@material-ui/icons';
-import { DepartmentsInfo, DepartmentsInfo } from '../../libs/interfaces';
+import { DepartmentsInfo } from '../../libs/interfaces';
+import Link from 'next/link';
+import { noAction } from '../../libs/utils';
 
 const tableIcons: Icons<DepartmentsInfo> = {
   Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
@@ -59,24 +61,53 @@ const AuthDepartments = (props: Props) => {
       field: 'departmentName',
     },
     {
-      title: 'Citations',
-      field: 'citations',
+      title: 'citations Per Capita ',
+      field: 'citationsPerCapita',
+      render: (rowData) => (
+        <span>{rowData.citationsPerCapita?.toFixed(2)}</span>
+      ),
     },
     {
-      title: 'H-Index',
-      field: 'hindex',
+      title: 'H-Index Per Capita',
+      field: 'hindexPerCapita',
+      render: (rowData) => <span>{rowData.hindexPerCapita?.toFixed(2)}</span>,
     },
     {
-      title: 'I10-Index',
-      field: 'i10hindex',
+      title: 'I10-Index Per Capita',
+      field: 'i10hindexPerCapita',
+      render: (rowData) => (
+        <span>{rowData.i10hindexPerCapita?.toFixed(2)}</span>
+      ),
     },
     {
       title: 'Total',
       field: 'total',
+      render: (rowData) => <span>{rowData.total?.toFixed(2)}</span>,
     },
     {
       title: 'Position',
       field: 'position',
+      render: (rowData) => (
+        <Link
+          href={'#'}
+          onClick={noAction}
+          className="bg-[#3265AF] text-white px-1"
+        >
+          {rowData.position}
+        </Link>
+      ),
+    },
+    {
+      title: '-',
+      field: 'view',
+      render: (rowData) => (
+        <Link
+          href={`/dashboard/reports/departments/${rowData._id}`}
+          className="btn-link btn-md"
+        >
+          Full Metrics
+        </Link>
+      ),
     },
   ];
 
@@ -84,7 +115,7 @@ const AuthDepartments = (props: Props) => {
     paging: true,
     pageSize: 10,
     exportButton: true,
-    selection: false,
+    selection: true,
     sorting: true,
     exportAllData: true,
     emptyRowsWhenPaging: false,
