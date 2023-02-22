@@ -1,11 +1,10 @@
-import { withAuth } from '../../../libs/hocs';
+import { authSchoolId, withAuth } from '../../../libs/hocs';
 import { compose } from 'redux';
 import LecturerLayout from '../../../components/LecturerLayout';
 import AppProfileHeader from '../../../serverlets/AppProfileHeader';
 import AppProfileDrawer from '../../../serverlets/AppProfileDrawer';
 import { useAtom } from 'jotai';
-import { lecturersRankingAtom, userInfoAtom } from '../../../libs/store';
-import { authToken } from '../../../libs/hocs';
+import { userInfoAtom } from '../../../libs/store';
 import Copyright from '../../../serverlets/Copyright';
 import RankingMenu from './RankingMenu';
 import AuthLecturerRanking from '../../../components/DataTables/AuthLecturerRanking';
@@ -13,19 +12,32 @@ import { useEffect, useState } from 'react';
 import { GSIRanking } from '../../../libs/interfaces';
 import AppDashBoardTopUserMenuScores from '../../../serverlets/AppDashBoardTopUserMenuScores';
 import { getPositionString } from '../../../libs/utils';
+import useSWR from 'swr';
 
 export function FacultyRanking() {
-  const [profile, setProfile] = useAtom(userInfoAtom);
-  const [lecturersRanking] = useAtom(lecturersRankingAtom);
-  const token = authToken();
+  const [profile] = useAtom(userInfoAtom);
+  const schoolId = authSchoolId();
+  const [running, setRunning] = useState<boolean>(false);
+
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating || running;
 
   const [lecturersByFaculty, setLecturersByFaculty] = useState<GSIRanking[]>(
     [] as GSIRanking[]
   );
 
   useEffect(() => {
-    if (lecturersRanking) {
-      const lecturers = lecturersRanking.filter(
+    if (lecturersRanking && !busy) {
+      setRunning(true);
+      const lecturers = lecturersRanking.data.filter(
         (lecturer) => lecturer.facultyId === profile.facultyId
       );
       // // sort the filtered array by total in descending order
@@ -37,8 +49,9 @@ export function FacultyRanking() {
         user.position = _position;
       });
       setLecturersByFaculty(lecturers);
+      setRunning(false);
     }
-  }, [lecturersRanking, profile.facultyId]);
+  }, [lecturersRanking, profile.facultyId, busy]);
 
   return (
     <>
@@ -71,7 +84,7 @@ export function FacultyRanking() {
                 <AuthLecturerRanking
                   title="Ranking By Faculty"
                   data={lecturersByFaculty}
-                  loading={false}
+                  loading={busy}
                 />
               </div>
             </div>

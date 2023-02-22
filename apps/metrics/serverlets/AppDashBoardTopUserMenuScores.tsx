@@ -1,31 +1,42 @@
 import React, { useEffect, useState } from 'react';
-import { lecturersRankingAtom, userInfoAtom } from '../libs/store';
+import { userInfoAtom } from '../libs/store';
 import Wait from '../components/Wait';
 import { useAtom } from 'jotai';
 import { authSchoolId, authToken } from '../libs/hocs';
 import { AuthUserInfo, GSIRanking } from '../libs/interfaces';
+import useSWR from 'swr';
 
 const AppDashBoardTopUserMenuScores = () => {
   const schoolId = authSchoolId();
   const token = authToken();
 
-  const [busy, setBusy] = useState<boolean>(false);
-  const [user] = useAtom(userInfoAtom);
+  const [running, setRunning] = useState<boolean>(false);
 
-  const [lecturersRanking] = useAtom(lecturersRankingAtom);
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating || running;
 
   const [userRank, setUserRank] = useState<GSIRanking>({} as GSIRanking);
 
   useEffect(() => {
-    if (schoolId && token) {
-      if (lecturersRanking.length > 0) {
-        const thisUserRank: GSIRanking = lecturersRanking.find(
+    if (lecturersRanking && token && !busy) {
+      setRunning(true);
+      if (lecturersRanking.data.length > 0) {
+        const thisUserRank: GSIRanking = lecturersRanking.data.find(
           (item: AuthUserInfo) => item._id === token
         );
         setUserRank(thisUserRank);
       }
+      setRunning(false);
     }
-  }, [schoolId, user._id, token]);
+  }, [token, busy, lecturersRanking]);
 
   return (
     <>

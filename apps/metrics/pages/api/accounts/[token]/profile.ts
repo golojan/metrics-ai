@@ -36,6 +36,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
                 scopusId: account.scopusId,
                 orcidId: account.orcidId,
                 googleScholarId: account.googleScholarId,
+                lastScrapped: account.lastScrapped,
                 googlePresence: account.googlePresence,
                 citations: account.citations,
                 hindex: account.hindex,

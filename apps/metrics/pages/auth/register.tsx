@@ -503,16 +503,16 @@ const Home: NextPage = () => {
                                 {emError}
                               </strong>
                             </div>
-                            <label className="" htmlFor="email">
+                            <label className="" htmlFor="myemail">
                               Email Address
                             </label>
                             <input
-                              type="email"
+                              type="text"
                               required
                               ref={emailRef}
                               className="form-control form-control-lg"
-                              id="email"
-                              name="email"
+                              id="myemail"
+                              name="myemail"
                               autoComplete="off"
                               placeholder="Your Email Address"
                               value={register.email}

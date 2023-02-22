@@ -1,8 +1,4 @@
-import {
-  ResponseFunctions,
-  AccountTypes,
-  SchoolSettingsType,
-} from '../../../../libs/interfaces';
+import { ResponseFunctions, AccountTypes } from '../../../../libs/interfaces';
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { dbCon } from '../../../../libs/models';
@@ -31,6 +27,9 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         {
           $project: {
             schoolId: 1,
+            accountType: 1,
+            gender: 1,
+            membershipType: 1,
             facultyId: 1,
             departmentId: 1,
             picture: 1,
@@ -45,7 +44,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
             totalPublications: 1,
             searchMetadata: 1,
             fullname: {
-              $concat: ['$firstname', ' ', '$lastname'],
+              $concat: ['$firstname', ' ', '$middlename', ' ', '$lastname'],
             },
             citations: 1,
             hindex: 1,
@@ -111,31 +110,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           },
         },
         {
-          $project: {
-            schoolId: 1,
-            facultyId: 1,
-            departmentId: 1,
-            picture: 1,
-            username: 1,
-            email: 1,
-            mobile: 1,
-            firstname: 1,
-            lastname: 1,
-            googlePresence: 1,
-            firstPublicationYear: 1,
-            lastPublicationYear: 1,
-            totalPublications: 1,
-            searchMetadata: 1,
-            fullname: 1,
-            citations: 1,
-            hindex: 1,
-            i10hindex: 1,
-            citationsPerCapita: 1,
-            hindexPerCapita: 1,
-            i10hindexPerCapita: 1,
-          },
-        },
-        {
           $addFields: {
             total: {
               $avg: [
@@ -147,32 +121,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           },
         },
         {
-          $project: {
-            schoolId: 1,
-            facultyId: 1,
-            departmentId: 1,
-            picture: 1,
-            username: 1,
-            email: 1,
-            mobile: 1,
-            firstname: 1,
-            lastname: 1,
-            googlePresence: 1,
-            firstPublicationYear: 1,
-            lastPublicationYear: 1,
-            totalPublications: 1,
-            searchMetadata: 1,
-            fullname: 1,
-            citations: 1,
-            hindex: 1,
-            i10hindex: 1,
-            citationsPerCapita: 1,
-            hindexPerCapita: 1,
-            i10hindexPerCapita: 1,
-            total: 1,
-          },
-        },
-        {
           $addFields: {
             highestTotal: {
               $max: '$total',
@@ -181,8 +129,103 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         },
         {
           $addFields: {
+            highestCitationsPerCapita: {
+              $max: '$citationsPerCapita',
+            },
+          },
+        },
+        {
+          $addFields: {
+            highestHindexPerCapita: {
+              $max: '$hindexPerCapita',
+            },
+          },
+        },
+        {
+          $addFields: {
+            highestiI10hindexPerCapita: {
+              $max: '$i10hindexPerCapita',
+            },
+          },
+        },
+        {
+          $addFields: {
+            citationsByWeight: {
+              $multiply: [
+                '$citationsPerCapita',
+                { $divide: ['$highestCitationsPerCapita', 100] },
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            hindexByWeight: {
+              $multiply: [
+                '$hindexPerCapita',
+                { $divide: ['$highestHindexPerCapita', 100] },
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            i10hindexByWeight: {
+              $multiply: [
+                '$i10hindexPerCapita',
+                { $divide: ['$highestiI10hindexPerCapita', 100] },
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
             rank: {
-              $multiply: [{ $divide: ['$total', '$highestTotal'] }, 100],
+              $cond: {
+                if: {
+                  $eq: ['$highestTotal', 0],
+                },
+                then: 0,
+                else: {
+                  $multiply: [{ $divide: ['$total', '$highestTotal'] }, 100],
+                },
+              },
+            },
+          },
+        },
+        {
+          $addFields: {
+            totalWeighted: {
+              $avg: [
+                '$citationsByWeight',
+                '$hindexByWeight',
+                '$i10hindexByWeight',
+              ],
+            },
+          },
+        },
+        {
+          $addFields: {
+            highestTotalWeighted: {
+              $max: '$totalWeighted',
+            },
+          },
+        },
+        {
+          $addFields: {
+            rankWeighted: {
+              $cond: {
+                if: {
+                  $eq: ['$highestTotalWeighted', 0],
+                },
+                then: 0,
+                else: {
+                  $multiply: [
+                    { $divide: ['$totalWeighted', '$highestTotalWeighted'] },
+                    100,
+                  ],
+                },
+              },
             },
           },
         },

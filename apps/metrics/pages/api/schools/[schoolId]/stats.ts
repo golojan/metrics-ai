@@ -16,6 +16,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     GET: async (req: NextApiRequest, res: NextApiResponse) => {
       const schoolId = req.query.schoolId as string;
       const { Accounts } = await dbCon();
+
       const gs_results: any = await Accounts.aggregate([
         { $match: { schoolId: String(schoolId) } },
         {

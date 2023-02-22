@@ -8,9 +8,28 @@ import { authSchoolId } from '../../../libs/hocs';
 import Wait from '../../Wait';
 
 const PerCapitaI10Index = () => {
-  const apiUri = process.env.NEXT_PUBLIC_API_URI;
   const schoolId = authSchoolId();
-  const { data: statistics, error, isLoading } = useSWR<GSIRanking>(`${apiUri}schools/${schoolId}/stats`, () => fetch(`${apiUri}schools/${schoolId}/stats`).then((res) => res.json()));
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating;
+
+  // get the total i10hindex per capita
+  const getTotalI10indexPerCapita = () => {
+    const _lecturers = lecturersRanking.data;
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.i10hindexPerCapita;
+    });
+    return Number(_total).toFixed(2);
+  };
+
   return (
     <>
       {/*  */}
@@ -22,12 +41,16 @@ const PerCapitaI10Index = () => {
           </div>
           <h1 className="total mt-2">
             <FontAwesomeIcon className="text-secondary" icon={faAreaChart} />{' '}
-            {isLoading ? <Wait /> : statistics.i10hindexPerCapita.toFixed(2)}
+            {busy ? <Wait /> : getTotalI10indexPerCapita()}
           </h1>
           <em className="absolute bottom-0 right-5">
-            <strong className="text-green-600">{isLoading ? <Wait /> : statistics.i10hindexPerCapita.toFixed(2)}</strong>{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : getTotalI10indexPerCapita()}
+            </strong>{' '}
             i10-Index by{' '}
-            <strong className="text-green-600">{isLoading ? <Wait /> : statistics.totalLecturers}</strong>{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : lecturersRanking.data.length}
+            </strong>{' '}
             staff
           </em>
         </div>

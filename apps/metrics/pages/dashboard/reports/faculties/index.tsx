@@ -10,23 +10,33 @@ import { getPositionString } from '../../../../libs/utils';
 import ReportsMenu from '../../../../components/ReportsMenu';
 import AppDashBoardTopMenuScores from '../../../../serverlets/AppDashBoardTopMenuScores';
 import AppDashboardTopMenu from '../../../../serverlets/AppDashboardTopMenu';
-import { useAtom } from 'jotai';
-import { lecturersRankingAtom } from '../../../../libs/store';
+
 import { FacultiesInfo, GSIRanking } from '../../../../libs/interfaces';
-import AuthFaculties from 'apps/metrics/components/DataTables/AuthFaculties';
+import AuthFaculties from '../../../../components/DataTables/AuthFaculties';
 import { loadFaculties } from '../../../../libs/utils';
 import { authSchoolId } from '../../../../libs/hocs';
+import useSWR from 'swr';
 
 const ReportFaculties: NextPage = () => {
-  const [busy, setBusy] = useState(false);
-  const [lecturersRanking] = useAtom(lecturersRankingAtom);
   const schoolId = authSchoolId();
+  const [running, setRunning] = useState<boolean>(false);
+
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating || running;
 
   const [faculties, setFaculties] = useState<FacultiesInfo[]>([]);
 
   // get the total citations per capita for a faculty
   const getFacultyTotalCitiationsPerCapita = (facultyId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.facultyId === facultyId
     );
     let _total = 0;
@@ -38,7 +48,7 @@ const ReportFaculties: NextPage = () => {
 
   // get the total hindex per capita for a faculty
   const getFacultyTotalHindexPerCapita = (facultyId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.facultyId === facultyId
     );
     let _total = 0;
@@ -50,7 +60,7 @@ const ReportFaculties: NextPage = () => {
 
   // get the total i10index per capita for a faculty
   const getFacultyTotalI10indexPerCapita = (facultyId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.facultyId === facultyId
     );
     let _total = 0;
@@ -62,7 +72,7 @@ const ReportFaculties: NextPage = () => {
 
   // get the total for a faculty
   const getFacultyTotal = (facultyId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.facultyId === facultyId
     );
     let _total = 0;
@@ -74,7 +84,7 @@ const ReportFaculties: NextPage = () => {
 
   // get the total ranks for a faculty
   const getFacultyTotalRanks = (facultyId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.facultyId === facultyId
     );
     let _total = 0;
@@ -86,14 +96,14 @@ const ReportFaculties: NextPage = () => {
 
   useEffect(() => {
     const loadAllFaculties = async () => {
-      setBusy(true);
+      setRunning(true);
       const data = await loadFaculties(schoolId);
       setFaculties(data);
-      setBusy(false);
+      setRunning(false);
     };
     loadAllFaculties();
-    if (faculties && lecturersRanking) {
-      setBusy(true);
+    if (faculties && lecturersRanking && !busy) {
+      setRunning(true);
       // // sort the filtered array by total in descending order
       faculties.sort((a, b) => {
         return b.total - a.total;
@@ -112,9 +122,9 @@ const ReportFaculties: NextPage = () => {
         const _position = getPositionString(_index);
         faculty.position = _position;
       });
-      setBusy(false);
+      setRunning(false);
     }
-  }, [faculties, lecturersRanking]);
+  }, [faculties, lecturersRanking, busy]);
 
   return (
     <>

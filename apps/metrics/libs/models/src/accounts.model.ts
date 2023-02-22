@@ -105,6 +105,10 @@ const accountsScheme = new mongoose.Schema(
     isFellow: { type: Boolean, default: false },
     schoolCode: { type: String },
     googleScholarId: { type: String },
+    lastScrapped: {
+      type: Date,
+      default: Date.now(),
+    },
     scopusId: { type: String },
     orcidId: { type: String },
     googlePresence: { type: Number, default: 0 },
@@ -114,7 +118,6 @@ const accountsScheme = new mongoose.Schema(
     totalPublications: { type: Number, default: 0 },
     firstPublicationYear: { type: Number, default: 0 },
     lastPublicationYear: { type: Number, default: 0 },
-
     publications: [
       {
         title: String,

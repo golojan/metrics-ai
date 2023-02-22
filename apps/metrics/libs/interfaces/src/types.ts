@@ -144,6 +144,7 @@ export interface AuthUserInfo {
   emailNotification?: boolean;
   schoolCode?: string;
   googleScholarId?: string;
+  lastScrapped?: Date;
   scopusId?: string;
   orcidId?: string;
   googlePresence?: number;

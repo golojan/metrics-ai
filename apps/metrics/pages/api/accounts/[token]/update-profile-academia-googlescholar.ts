@@ -24,6 +24,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           totalPublications: scrap.totalPublications,
           firstPublicationYear: scrap.firstPublicationYear,
           lastPublicationYear: scrap.lastPublicationYear,
+          googlePresence: 1,
+          lastScrapped: Date.now(),
         }
       ).catch(catcher);
 

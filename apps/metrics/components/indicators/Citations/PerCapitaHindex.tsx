@@ -4,15 +4,32 @@ import React from 'react';
 import ShowChartButton from '../../ShowChartButton';
 import { authSchoolId } from '../../../libs/hocs';
 import { GSIRanking } from '../../../libs/interfaces';
-
 import useSWR from 'swr';
 import Wait from '../../Wait';
 
 const PerCapitaHindex = () => {
-
-  const apiUri = process.env.NEXT_PUBLIC_API_URI;
   const schoolId = authSchoolId();
-  const { data: statistics, error, isLoading } = useSWR<GSIRanking>(`${apiUri}schools/${schoolId}/stats`, () => fetch(`${apiUri}schools/${schoolId}/stats`).then((res) => res.json()));
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating;
+
+  // get the total hindex per capita for a scghool
+  const getTotalHindexPerCapita = () => {
+    const _lecturers = lecturersRanking.data;
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.hindexPerCapita;
+    });
+    return Number(_total).toFixed(2);
+  };
+
   return (
     <>
       {/*  */}
@@ -24,12 +41,17 @@ const PerCapitaHindex = () => {
           </div>
           <h1 className="total mt-2">
             <FontAwesomeIcon className="text-secondary" icon={faAreaChart} />{' '}
-            {isLoading ? <Wait /> : statistics.hindexPerCapita.toFixed(2)}
+            {busy ? <Wait /> : getTotalHindexPerCapita()}
           </h1>
           <em className="absolute bottom-0 right-5">
-            Total <strong className="text-green-600">{isLoading ? <Wait /> : statistics.hindexPerCapita.toFixed(2)}</strong>{' '}
+            Total{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : getTotalHindexPerCapita()}
+            </strong>{' '}
             H-Index by{' '}
-            <strong className="text-green-600">{isLoading ? <Wait /> : statistics.totalLecturers}</strong>{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : lecturersRanking.data.length}
+            </strong>{' '}
             staff
           </em>
         </div>

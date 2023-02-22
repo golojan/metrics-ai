@@ -2,43 +2,49 @@ import { NextPage } from 'next';
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../../components/AdminLayout';
 import { compose } from 'redux';
-
-import { faHome, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
 import Link from 'next/link';
 import AppHeader from '../../../../serverlets/AppHeader';
-import { authToken, withAuth } from '../../../../libs/hocs';
+import { authSchoolId, withAuth } from '../../../../libs/hocs';
 import AppDrawer from '../../../../serverlets/AppDrawer';
-import { getPositionString, noAction } from '../../../../libs/utils';
+import { getPositionString } from '../../../../libs/utils';
 import ReportsMenu from '../../../../components/ReportsMenu';
 import AppDashBoardTopMenuScores from '../../../../serverlets/AppDashBoardTopMenuScores';
 import AppDashboardTopMenu from '../../../../serverlets/AppDashboardTopMenu';
-import { useAtom } from 'jotai';
-import { lecturersRankingAtom } from '../../../../libs/store';
 import { GSIRanking } from '../../../../libs/interfaces';
 import AuthLecturerRanking from '../../../../components/DataTables/AuthLecturerRanking';
+import useSWR from 'swr';
 
 const ReportLecturers: NextPage = () => {
-  const [lecturersRanking] = useAtom(lecturersRankingAtom);
+  const schoolId = authSchoolId();
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating;
 
   const [lecturersBySchool, setLecturersBySchool] = useState<GSIRanking[]>(
     [] as GSIRanking[]
   );
 
   useEffect(() => {
-    if (lecturersRanking) {
+    if (lecturersRanking && !busy) {
+      const lecturersRankingData = lecturersRanking.data;
       // // sort the filtered array by total in descending order
-      lecturersRanking.sort((a, b) => b.rank - a.rank);
+      lecturersRankingData.sort((a, b) => b.rank - a.rank);
       // // add a rank property to each user object based on their position in the sorted array
-      lecturersRanking.forEach((user, index) => {
+      lecturersRankingData.forEach((user, index) => {
         const _index = index + 1;
         const _position = getPositionString(_index);
         user.position = _position;
       });
-      setLecturersBySchool(lecturersRanking);
+      setLecturersBySchool(lecturersRankingData);
     }
-  }, [lecturersRanking]);
+  }, [lecturersRanking, busy]);
 
   return (
     <>

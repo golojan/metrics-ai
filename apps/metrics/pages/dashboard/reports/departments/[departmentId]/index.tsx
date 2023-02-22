@@ -18,21 +18,30 @@ import {
 import ReportsMenu from '../../../../../components/ReportsMenu';
 import AppDashBoardTopMenuScores from '../../../../../serverlets/AppDashBoardTopMenuScores';
 import AppDashboardTopMenu from '../../../../../serverlets/AppDashboardTopMenu';
-import { useAtom } from 'jotai';
-import { lecturersRankingAtom } from '../../../../../libs/store';
 import { DepartmentsInfo, GSIRanking } from '../../../../../libs/interfaces';
-import AuthDepartments from 'apps/metrics/components/DataTables/AuthDepartments';
+import AuthDepartments from '../../../../../components/DataTables/AuthDepartments';
+import useSWR from 'swr';
 
 const ReportDepartments: NextPage = () => {
-  const [busy, setBusy] = useState(false);
-
-  const [lecturersRanking] = useAtom(lecturersRankingAtom);
   const schoolId = authSchoolId();
+  const [running, setRunning] = useState<boolean>(false);
+
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating || running;
+
   const [departments, setDepartments] = useState<DepartmentsInfo[]>([]);
 
   // get the total citations per capita for a department
   const getDepartmentTotalCitiationsPerCapita = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.departmentId === departmentId
     );
     let _total = 0;
@@ -42,9 +51,9 @@ const ReportDepartments: NextPage = () => {
     return Number(_total);
   };
 
-  // get the total hindex per capita for a department
+  // get the total hindex per capita for a scghool
   const getDepartmentTotalHindexPerCapita = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.departmentId === departmentId
     );
     let _total = 0;
@@ -56,7 +65,7 @@ const ReportDepartments: NextPage = () => {
 
   // get the total i10hindex per capita for a department
   const getDepartmentTotalI10indexPerCapita = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.departmentId === departmentId
     );
     let _total = 0;
@@ -68,7 +77,7 @@ const ReportDepartments: NextPage = () => {
 
   // get the total for a department
   const getDepartmentTotal = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.departmentId === departmentId
     );
     let _total = 0;
@@ -80,7 +89,7 @@ const ReportDepartments: NextPage = () => {
 
   // get the total ranks for a department
   const getDepartmentTotalRanks = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
+    const _lecturers = lecturersRanking.data.filter(
       (lecturer) => lecturer.departmentId === departmentId
     );
     let _total = 0;
@@ -92,14 +101,14 @@ const ReportDepartments: NextPage = () => {
 
   useEffect(() => {
     const loadAllDepartments = async () => {
-      setBusy(true);
+      setRunning(true);
       const data = await loadDepartments(schoolId);
       setDepartments(data);
-      setBusy(false);
+      setRunning(false);
     };
     loadAllDepartments();
-    if (departments && lecturersRanking) {
-      setBusy(true);
+    if (departments && lecturersRanking && !busy) {
+      setRunning(true);
       // // sort the filtered array by total in descending order
       departments.sort((a, b) => {
         return b.total - a.total;
@@ -120,9 +129,9 @@ const ReportDepartments: NextPage = () => {
         const _position = getPositionString(_index);
         department.position = _position;
       });
-      setBusy(false);
+      setRunning(false);
     }
-  }, [lecturersRanking, departments]);
+  }, [lecturersRanking, departments, busy]);
 
   return (
     <>

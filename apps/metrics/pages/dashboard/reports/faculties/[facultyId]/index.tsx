@@ -2,127 +2,59 @@ import { NextPage } from 'next';
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '../../../../../components/AdminLayout';
 import { compose } from 'redux';
-
-import { faHome, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
-import Link from 'next/link';
 import AppHeader from '../../../../../serverlets/AppHeader';
-import { authSchoolId, authToken, withAuth } from '../../../../../libs/hocs';
+import { authSchoolId, withAuth } from '../../../../../libs/hocs';
 import AppDrawer from '../../../../../serverlets/AppDrawer';
-import {
-  getPositionString,
-  loadDepartments,
-  noAction,
-} from '../../../../../libs/utils';
+import { getPositionString } from '../../../../../libs/utils';
 import ReportsMenu from '../../../../../components/ReportsMenu';
 import AppDashBoardTopMenuScores from '../../../../../serverlets/AppDashBoardTopMenuScores';
 import AppDashboardTopMenu from '../../../../../serverlets/AppDashboardTopMenu';
-import { useAtom } from 'jotai';
-import { lecturersRankingAtom } from '../../../../../libs/store';
-import { DepartmentsInfo, GSIRanking } from '../../../../../libs/interfaces';
-import AuthDepartments from 'apps/metrics/components/DataTables/AuthDepartments';
+import { GSIRanking } from '../../../../../libs/interfaces';
+import AuthLecturerRanking from '../../../../../components/DataTables/AuthLecturerRanking';
+import { useRouter } from 'next/router';
+import useSWR from 'swr';
 
 const ReportFaculties: NextPage = () => {
-  const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
-  const [lecturersRanking] = useAtom(lecturersRankingAtom);
+  const { facultyId } = router.query;
+
   const schoolId = authSchoolId();
-  const [departments, setDepartments] = useState<DepartmentsInfo[]>([]);
+  const [running, setRunning] = useState<boolean>(false);
 
-  // get the total citations per capita for a department
-  const getDepartmentTotalCitiationsPerCapita = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
-      (lecturer) => lecturer.departmentId === departmentId
-    );
-    let _total = 0;
-    _lecturers.forEach((lecturer) => {
-      _total += lecturer.citationsPerCapita;
-    });
-    return Number(_total);
-  };
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
 
-  // get the total hindex per capita for a department
-  const getDepartmentTotalHindexPerCapita = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
-      (lecturer) => lecturer.departmentId === departmentId
-    );
-    let _total = 0;
-    _lecturers.forEach((lecturer) => {
-      _total += lecturer.hindexPerCapita;
-    });
-    return Number(_total);
-  };
+  const busy = isLoading || isValidating || running;
 
-  // get the total i10hindex per capita for a department
-  const getDepartmentTotalI10indexPerCapita = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
-      (lecturer) => lecturer.departmentId === departmentId
-    );
-    let _total = 0;
-    _lecturers.forEach((lecturer) => {
-      _total += lecturer.i10hindexPerCapita;
-    });
-    return Number(_total);
-  };
-
-  // get the total for a department
-  const getDepartmentTotal = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
-      (lecturer) => lecturer.departmentId === departmentId
-    );
-    let _total = 0;
-    _lecturers.forEach((lecturer) => {
-      _total += lecturer.total;
-    });
-    return Number(_total);
-  };
-
-  // get the total ranks for a department
-  const getDepartmentTotalRanks = (departmentId: string) => {
-    const _lecturers = lecturersRanking.filter(
-      (lecturer) => lecturer.departmentId === departmentId
-    );
-    let _total = 0;
-    _lecturers.forEach((lecturer) => {
-      _total += lecturer.rank;
-    });
-    return Number(_total);
-  };
+  const [lecturersByFaculty, setLecturersByFaculty] = useState<GSIRanking[]>(
+    [] as GSIRanking[]
+  );
 
   useEffect(() => {
-    const loadAllDepartments = async () => {
-      setBusy(true);
-      const data = await loadDepartments(schoolId);
-      setDepartments(data);
-      setBusy(false);
-    };
-    loadAllDepartments();
-    if (departments && lecturersRanking) {
-      setBusy(true);
+    if (lecturersRanking && facultyId && !running) {
+      setRunning(true);
+      const lecturers = lecturersRanking.data.filter(
+        (lecturer) => lecturer.facultyId === facultyId
+      );
       // // sort the filtered array by total in descending order
-      departments.sort((a, b) => {
-        return b.total - a.total;
-      });
-      departments.forEach((department, index) => {
-        department.citationsPerCapita = getDepartmentTotalCitiationsPerCapita(
-          department._id
-        );
-        department.hindexPerCapita = getDepartmentTotalHindexPerCapita(
-          department._id
-        );
-        department.i10hindexPerCapita = getDepartmentTotalI10indexPerCapita(
-          department._id
-        );
-        department.total = getDepartmentTotal(department._id);
-        department.rank = getDepartmentTotalRanks(department._id);
+      lecturers.sort((a, b) => b.rank - a.rank);
+      // // add a rank property to each user object based on their position in the sorted array
+      lecturers.forEach((user, index) => {
         const _index = index + 1;
         const _position = getPositionString(_index);
-        department.position = _position;
+        user.position = _position;
       });
-      setBusy(false);
+      setLecturersByFaculty(lecturers);
+      setRunning(false);
     }
-  }, [lecturersRanking, departments]);
+  }, [lecturersRanking, facultyId, running]);
 
   return (
     <>
@@ -142,10 +74,10 @@ const ReportFaculties: NextPage = () => {
                 <ReportsMenu />
               </div>
               <div className="col-12 col-md-12 col-xxl-9 col-xl-9 col-lg-9 my-1">
-                <AuthDepartments
-                  title="Ranking of School by Departments"
-                  data={departments}
-                  loading={false}
+                <AuthLecturerRanking
+                  title="Faculty Ranking"
+                  data={lecturersByFaculty}
+                  loading={busy}
                 />
               </div>
             </div>

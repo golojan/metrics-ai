@@ -8,9 +8,28 @@ import { authSchoolId } from '../../../libs/hocs';
 import Wait from '../../Wait';
 
 const PerCapitaAllCitations = () => {
-  const apiUri = process.env.NEXT_PUBLIC_API_URI;
   const schoolId = authSchoolId();
-  const { data: statistics, error, isLoading } = useSWR<GSIRanking>(`${apiUri}schools/${schoolId}/stats`, () => fetch(`${apiUri}schools/${schoolId}/stats`).then((res) => res.json()));
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating;
+
+  // get the total citations per capita
+  const getTotalCitiationsPerCapita = () => {
+    const _lecturers = lecturersRanking.data;
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.citationsPerCapita;
+    });
+    return Number(_total).toFixed(2);
+  };
+
   return (
     <>
       {/*  */}
@@ -22,12 +41,16 @@ const PerCapitaAllCitations = () => {
           </div>
           <h1 className="total mt-2">
             <FontAwesomeIcon className="text-secondary" icon={faAreaChart} />{' '}
-            {isLoading ? <Wait /> : statistics.citationsPerCapita.toFixed(2)}
+            {busy ? <Wait /> : getTotalCitiationsPerCapita()}
           </h1>
           <em className="absolute bottom-0 right-5">
-            <strong className="text-green-600">{isLoading ? <Wait /> : statistics.citationsPerCapita.toFixed(2)}</strong>{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : getTotalCitiationsPerCapita()}
+            </strong>{' '}
             citations by{' '}
-            <strong className="text-green-600">{isLoading ? <Wait /> : statistics.totalLecturers}</strong>{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : lecturersRanking.data.length}
+            </strong>{' '}
             staff
           </em>
         </div>

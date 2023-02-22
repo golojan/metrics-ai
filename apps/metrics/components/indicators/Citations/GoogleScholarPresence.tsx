@@ -8,9 +8,29 @@ import { authSchoolId } from '../../../libs/hocs';
 import Wait from '../../Wait';
 
 const GoogleScholarPresence = () => {
-  const apiUri = process.env.NEXT_PUBLIC_API_URI;
   const schoolId = authSchoolId();
-  const { data: statistics, error, isLoading } = useSWR<GSIRanking>(`${apiUri}schools/${schoolId}/stats`, () => fetch(`${apiUri}schools/${schoolId}/stats`).then((res) => res.json()));
+  const {
+    data: lecturersRanking,
+    isLoading,
+    isValidating,
+  } = useSWR<{ status: boolean; data: GSIRanking[] }>(
+    `/api/lecturers/${schoolId}/ranking`,
+    async (url) => await fetch(url).then((r) => r.json())
+  );
+
+  const busy = isLoading || isValidating;
+
+  // get the total google presence
+  const getTotalGooglePresence = () => {
+    const _lecturers = lecturersRanking.data;
+    let _total = 0;
+    _lecturers.forEach((lecturer) => {
+      _total += lecturer.googlePresence;
+    });
+    // % google presence
+    return Number((_total / lecturersRanking.data.length) * 100).toFixed(2);
+  };
+
   return (
     <>
       {/*  */}
@@ -22,13 +42,15 @@ const GoogleScholarPresence = () => {
           </div>
           <h1 className="total mt-2">
             <FontAwesomeIcon className="text-secondary" icon={faAreaChart} />{' '}
-            {isLoading ? <Wait /> : statistics.percentageOfStaffWithGooglePresence.toFixed(1) + '%'}
+            {busy ? <Wait /> : getTotalGooglePresence() + '%'}
           </h1>
           <em className="absolute bottom-0 right-5">
             <strong className="text-green-600 small">
-              {isLoading ? <Wait /> : statistics.percentageOfStaffWithGooglePresence.toFixed(1) + '%'}
-            </strong> of <strong className="text-green-600">
-              {isLoading ? <Wait /> : statistics.totalLecturers}
+              {busy ? <Wait /> : getTotalGooglePresence() + '%'}
+            </strong>{' '}
+            of{' '}
+            <strong className="text-green-600">
+              {busy ? <Wait /> : lecturersRanking.data.length}
             </strong>{' '}
             are Scholars
           </em>
